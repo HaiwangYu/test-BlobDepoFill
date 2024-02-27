@@ -95,7 +95,7 @@ local sp_override = {
 local sp = sp_maker(params, tools, sp_override);
 local sp_pipes = [sp.make_sigproc(a) for a in tools.anodes];
 
-local img = import 'pgrapher/experiment/protodunevd/img.jsonnet';
+local img = import 'img.jsonnet';
 local img_maker = img();
 local img_pipes = [img_maker.per_anode(a) for a in tools.anodes];
 
@@ -159,11 +159,12 @@ local parallel_pipes = [
                 // sinks.dnnroi_pipe[n],
                 // g.pnode({type: "DumpFrames", name: "dumpframes-%d"%tools.anodes[n].data.ident}, nin = 1, nout=0),
                 img_pipes[n],
+                // img_maker.sink(tools.anodes[n], "reco-%d"%tools.anodes[n].data.ident),
           ], 
           'parallel_pipe_%d' % n) 
   for n in std.range(0, std.length(tools.anodes) - 1)];
 
-local outtags = [];
+// local outtags = [];
 local tag_rules = {
     frame: {
         '.*': 'framefanin',
@@ -174,12 +175,41 @@ local tag_rules = {
         + {['dnnsp%d' % anode.data.ident]: ['dnnsp%d' % anode.data.ident] for anode in tools.anodes},
 };
 
-// local parallel_graph = f.multifanout('DepoSetFanout', parallel_pipes, [1,4], [4,1], 'sn_mag', tag_rules);
+// // local parallel_graph = f.multifanout('DepoSetFanout', parallel_pipes, [1,4], [4,1], 'sn_mag', tag_rules);
 
-local nanodes = std.length(tools.anodes);
-local parallel_graph = f.multifanout('DepoSetFanout', parallel_pipes, [1,nanodes], [nanodes,1], 'sn_mag', tag_rules);
+// local nanodes = std.length(tools.anodes);
+// local parallel_graph = f.multifanout('DepoSetFanout', parallel_pipes, [1,nanodes], [nanodes,1], 'sn_mag', tag_rules);
 
+local dsout(name, multiplicity) = g.pnode({
+    type: "DepoSetFanout",
+    name: "dsout-%s" % name,
+    data: {
+        multiplicity: multiplicity,
+    },
+}, nin=1, nout=multiplicity);
 
+local per_apa = [
+    local dsf = dsout("bdf-%d" %n, 2);
+    local reco = parallel_pipes[n];
+    local cf = img_maker.cluster_fanout("bdf-%d"%tools.anodes[n].data.ident, 2);
+    local bdf = img_maker.blob_depo_fill(tools.anodes[n], "bdf-%d"%tools.anodes[n].data.ident);
+    local recs = img_maker.sink(tools.anodes[n], "reco-%d"%tools.anodes[n].data.ident);
+    local bdfs = img_maker.sink(tools.anodes[n], "bdf-%d"%tools.anodes[n].data.ident);
+    g.intern(
+        [dsf],[],[reco,cf,bdf,recs,bdfs,],
+        edges = [
+            g.edge(dsf, reco, 0, 0),
+            g.edge(dsf, bdf, 1, 1),
+            g.edge(reco, cf, 0, 0),
+            g.edge(cf, recs, 0, 0),
+            g.edge(cf, bdf, 1, 0),
+            g.edge(bdf, bdfs, 0, 0),
+        ],
+        iports = [dsf.iports[0]],
+        oports = [],
+    ), for n in std.range(0, std.length(tools.anodes) - 1)];
+
+local parallel_graph = g.fan.fanout('DepoSetFanout', per_apa, "reco-bdf", tag_rules);
 
 // Only one sink ////////////////////////////////////////////////////////////////////////////
 
