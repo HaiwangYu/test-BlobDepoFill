@@ -18,7 +18,7 @@ local sim = sim_maker(params, tools);
 
 // Deposit and drifter ///////////////////////////////////////////////////////////////////////////////
 
-local thetaXZ = 80*wc.deg;
+local thetaXZ = 20*wc.deg;
 local thetaXZ2 = 45*wc.deg;
 local thetaXZ3 = 60*wc.deg;
 
@@ -44,12 +44,17 @@ local stubby_top3 = {
   tail: wc.point(110*(1 + std.tan(thetaXZ3)), 110, 110*(1+1), wc.cm),
 };
 
+local isochronous = {
+    head: wc.point(50, 50, 50, wc.cm),
+    tail: wc.point(50, 50, 100, wc.cm),
+};
+
 local tracklist = [
 
   {
     time: 0 * wc.us,
     charge: -500, // 5000 e/mm
-    ray: stubby_top, // params.det.bounds,
+    ray: isochronous, // params.det.bounds,
   },
 
 //  {

@@ -347,7 +347,7 @@ function() {
             // fixme, breaks detector independence
             speed: drift_speed, //1.56*wc.mm/wc.us, 
             // fixme, as does this
-            time_offset: 314*wc.us,
+            time_offset: 745.366598778*wc.us, //314*wc.us,
         }
     }, nin=2, nout=1, uses=anodes),
     cluster_fanout(name, multiplicity) :: g.pnode({
