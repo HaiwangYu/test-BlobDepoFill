@@ -54,7 +54,7 @@ local tracklist = [
   {
     time: 0 * wc.us,
     charge: -500, // 5000 e/mm
-    ray: isochronous, // params.det.bounds,
+    ray: stubby_bottom, // params.det.bounds,
   },
 
 //  {
